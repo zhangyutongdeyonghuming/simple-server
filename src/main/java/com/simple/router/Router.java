@@ -3,7 +3,7 @@ package com.simple.router;
 import com.simple.context.Context;
 
 @FunctionalInterface
-public interface Handler {
+public interface Router {
 
     /**
      * 处理器

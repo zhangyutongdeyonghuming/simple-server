@@ -11,9 +11,16 @@ repositories {
 // 版本管理
 def hutoolVersion = "5.7.22"
 def junitVersion = "5.8.2"
+def nettyVersion = "4.1.75.Final"
+def lombokVersion = "1.18.22"
 
 dependencies {
-    implementation "cn.hutool:hutool-log:$hutoolVersion"
+    annotationProcessor "org.projectlombok:lombok:$lombokVersion"
+    compileOnly "org.projectlombok:lombok:$lombokVersion"
+    testAnnotationProcessor "org.projectlombok:lombok:$lombokVersion"
+    testCompileOnly "org.projectlombok:lombok:$lombokVersion"
+    implementation "cn.hutool:hutool-all:$hutoolVersion"
+    implementation "io.netty:netty-all:$nettyVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
 }
