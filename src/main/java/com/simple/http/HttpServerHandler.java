@@ -1,11 +1,14 @@
 package com.simple.http;
 
 import cn.hutool.core.util.URLUtil;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import com.simple.context.Context;
 import com.simple.handler.Handler;
 import com.simple.server.Server;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.HttpMethod;
@@ -14,6 +17,7 @@ import io.netty.handler.codec.http.multipart.DefaultHttpDataFactory;
 import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import io.netty.handler.codec.http.multipart.MemoryAttribute;
+import io.netty.util.CharsetUtil;
 
 import java.util.HashMap;
 import java.util.List;
@@ -85,7 +89,15 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         context.setCtx(ctx);
         context.setRequest(req);
         context.setParams(parseReqParams(req));
+        context.setHeaders(parseReqHeaders(req));
         return context;
+    }
+
+    private Map<String, String> parseReqHeaders(FullHttpRequest req) {
+        HttpHeaders headers = req.headers();
+        Map<String, String> headerMap = new HashMap<>(headers.size());
+        headers.forEach(header -> headerMap.put(header.getKey(), header.getValue()));
+        return headerMap;
     }
 
     /**
@@ -105,14 +117,23 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
             }
         } else {
             // post
-            HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(new DefaultHttpDataFactory(false), req);
-            List<InterfaceHttpData> httpPostData = decoder.getBodyHttpDatas();
-            for (InterfaceHttpData data : httpPostData) {
-                if (data instanceof MemoryAttribute) {
-                    MemoryAttribute attribute = (MemoryAttribute) data;
-                    params.put(attribute.getName(), attribute.getValue());
+            String contentType = req.headers().get("Content-type");
+            if ("application/json".equals(contentType)) {
+                ByteBuf jsonBuf = req.content();
+                String jsonStr = jsonBuf.toString(CharsetUtil.UTF_8);
+                JSONObject jsonObject = JSONUtil.parseObj(jsonStr);
+                params.putAll(jsonObject);
+            } else {
+                HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(new DefaultHttpDataFactory(false), req);
+                List<InterfaceHttpData> httpPostData = decoder.getBodyHttpDatas();
+                for (InterfaceHttpData data : httpPostData) {
+                    if (data instanceof MemoryAttribute) {
+                        MemoryAttribute attribute = (MemoryAttribute) data;
+                        params.put(attribute.getName(), attribute.getValue());
+                    }
                 }
             }
+
         }
         logger.info("params:{}", params);
         return params;
