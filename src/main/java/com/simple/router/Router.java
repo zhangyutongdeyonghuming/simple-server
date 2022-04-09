@@ -1,14 +1,27 @@
 package com.simple.router;
 
-import com.simple.context.Context;
+import com.simple.handler.Handler;
 
-@FunctionalInterface
+/**
+ * router
+ */
 public interface Router {
 
     /**
-     * 处理器
+     * 添加路由
      *
-     * @param context 上下文
+     * @param method  http 方法
+     * @param path    请求路径
+     * @param handler 处理器
      */
-    void handle(Context context);
+    void route(String method, String path, Handler handler);
+
+    /**
+     * 获取路由
+     *
+     * @param method http 方法
+     * @param path   请求路径
+     * @return 处理器
+     */
+    Handler getHandler(String method, String path);
 }

@@ -2,6 +2,8 @@ package com.simple.server;
 
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
+import com.simple.handler.Handler;
+import com.simple.http.HttpInitializer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
@@ -9,12 +11,13 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import lombok.AllArgsConstructor;
 
 import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.Map;
 
-@AllArgsConstructor
 public class SimpleServer implements Server {
+
     /**
      * 日志
      */
@@ -23,7 +26,17 @@ public class SimpleServer implements Server {
     /**
      * 端口
      */
-    private int port;
+    private final int port;
+
+    public SimpleServer(int port) {
+        this.port = port;
+        routerMap = new HashMap<>();
+    }
+
+    /**
+     * 路由Map
+     */
+    private final Map<String, Handler> routerMap;
 
     @Override
     public void run() {
@@ -47,9 +60,30 @@ public class SimpleServer implements Server {
         bootstrap.group(boss, work)
                 .handler(new LoggingHandler(LogLevel.DEBUG))
                 .channel(NioServerSocketChannel.class)
-                .childHandler(new HttpInitializer());
+                .childHandler(new HttpInitializer(this));
         ChannelFuture f = bootstrap.bind(new InetSocketAddress(port)).sync();
-        System.out.println("server start up on port : " + port);
+        logger.info("server start up on port : " + port);
         f.channel().closeFuture().sync();
+    }
+
+    @Override
+    public void route(String method, String path, Handler handler) {
+        routerMap.put(key(method, path), handler);
+    }
+
+    @Override
+    public Handler getHandler(String method, String path) {
+        return routerMap.get(key(method, path));
+    }
+
+    /**
+     * 获取router的key
+     *
+     * @param method 方法
+     * @param path   uri
+     * @return key
+     */
+    protected String key(String method, String path) {
+        return method + "-" + path;
     }
 }
